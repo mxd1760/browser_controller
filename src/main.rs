@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use egui::CollapsingHeader;
+use egui::{CollapsingHeader, Memory, Popup, PopupCloseBehavior};
 
 fn main() -> eframe::Result {
     env_logger::init();
@@ -30,6 +30,7 @@ struct BrowserControllerApp {
     joins:Vec<BrowserControllerItemGroupJoin>,
     // view cache?
     content:Vec<BrowserControllerContentItem>,
+    temp_string:String,
 }
 #[derive(Clone)]
 struct BrowserControllerFilter{
@@ -285,7 +286,8 @@ impl Default for BrowserControllerApp {
                     group_name:"Music".into()
                 }
             ],
-            content: vec![]
+            content: vec![],
+            temp_string: String::new()
         }
     }
 }
@@ -321,6 +323,46 @@ impl eframe::App for BrowserControllerApp {
                 });
             }
 
+        });
+        egui::TopBottomPanel::bottom("buttons").show(ctx, |ui|{
+            ui.horizontal(|ui|{
+                Popup::menu(&ui.button("new filter"))
+                .close_behavior(PopupCloseBehavior::CloseOnClickOutside)
+                .show(|ui|{
+                    ui.horizontal(|ui|{
+                        ui.label("filter name");
+                        ui.add(egui::TextEdit::singleline(&mut self.temp_string));
+                    });
+                    ui.horizontal(|ui|{
+                        if ui.button("Confirm").clicked(){
+                            self.filters.push(BrowserControllerFilter {
+                                name:self.temp_string.clone() ,
+                                groups: vec![] });
+                            self.temp_string = "".into();
+                            Popup::close_all(ctx);
+                        }
+                    })
+                });
+                Popup::menu(&ui.button("new group"))
+                .close_behavior(PopupCloseBehavior::CloseOnClickOutside)
+                .show(|ui|{
+                    ui.horizontal(|ui|{
+                        ui.label("group name");
+                        ui.add(egui::TextEdit::singleline(&mut self.temp_string));
+                    });
+                    ui.horizontal(|ui|{
+                        if ui.button("Confirm").clicked(){
+                            self.filters[self.filter_idx-1].groups.push(self.temp_string.clone());
+                            self.compute_content();
+                            self.temp_string = "".into();
+                            Popup::close_all(ctx);
+                        }
+                    })
+                });
+                if ui.button("add item").clicked(){
+                    //todo
+                }
+            });
         });
     }
 }
